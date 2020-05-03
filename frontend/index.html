@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AirAsia Assessment - Muktar SayedSaleh</title>
+    <title>AirAsia Assessment - Muktar Sayed Saleh</title>
     <meta charset="utf-8" />
     
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
@@ -93,16 +93,255 @@
 
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js" integrity="sha256-EPrkNjGEmCWyazb3A/Epj+W7Qm2pB9vnfXw+X6LImPM=" crossorigin="anonymous"></script>
-
+    
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-
+    
     <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/8.11.8/sweetalert2.all.min.js" integrity="sha256-2RS1U6UNZdLS0Bc9z2vsvV4yLIbJNKxyA4mrx5uossk=" crossorigin="anonymous"></script>
     
     <script type="text/javascript">
         var api_base_url = 'http://localhost:8000/';
-        
+        var dialog_mode = null;
+        var current_id = null;
+
+        function bindEvents()
+        {
+            $('#add-btn').unbind('click').bind('click', function(e){
+                e.preventDefault();
+                dialog_mode = 'new';
+                $('#modal').modal('show');
+                $('#modal-title').html('Add new package');
+                var fields = [
+                    "modal-hotel",
+                    "modal-description",
+                    "modal-price",
+                    "modal-duration",
+                    "modal-valid-until"
+                ];
+                for(var i in fields)
+                    $('#'+fields[i]).val('');
+            });
+
+
+            $('.edit-btn').unbind('click').bind('click', function(e){
+                e.preventDefault();
+                var id = $(this).data('id');
+
+                current_id = id;
+
+                $.ajax({
+                  method: "GET",
+                  url: api_base_url+"package/"+id,
+                  dataType: "json",
+                  success: function(data){
+                    dialog_mode = 'edit';
+                    $('#modal-title').html('Update package #'+id);
+                    $("#modal-hotel").val(data.hotel);
+                    $("#modal-description").val(data.description);
+                    $("#modal-price").val(data.price);
+                    $("#modal-duration").val(data.duration);
+                    $("#modal-valid-until").val(data.valid_until);
+                    $('#modal').modal('show');
+                  },
+                  error: function(error) {
+                        swal.fire(
+                            'Oops...',
+                            'Something went wrong, please try again later',
+                            'error'
+                        );
+                        return;
+                  }
+                });
+            });
+
+
+            $('.delete-btn').unbind('click').bind('click', function(e){
+                e.preventDefault();
+                var id = $(this).data('id');
+
+                Swal.fire({
+                  title: 'Are you sure?',
+                  text: "You won't be able to revert this!",
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                  if (result.value) {
+                    $.ajax({
+                      method: "DELETE",
+                      url: api_base_url+"package/"+id,
+                      dataType: "json",
+                      success: function(data){
+                        Swal.fire(
+                          'Deleted!',
+                          'Your file has been deleted.',
+                          'success'
+                        ).then(function(){
+                            window.location.reload();
+                        });
+                      },
+                      error: function(error) {
+                        swal.fire(
+                            'Oops...',
+                            'Something went wrong, please try again later',
+                            'error'
+                        );
+                        return;
+                      }
+                    });
+                  }
+                })
+            });
+
+
+            $('#modal-save-btn').unbind('click').bind('click', function(e){
+                var hotel = $("#modal-hotel").val();
+                var description = $("#modal-description").val();
+                var price = $("#modal-price").val();
+                var duration = $("#modal-duration").val();
+                var valid_until = $("#modal-valid-until").val();
+
+                if(hotel == '' || hotel == null)
+                {
+                    swal.fire(
+                        'Sorry',
+                        'Please fill in hotel name first',
+                        'warning'
+                    );
+                    return;
+                }
+
+                if(description == '' || description == null)
+                {
+                    swal.fire(
+                        'Sorry',
+                        'Please fill in package description first',
+                        'warning'
+                    );
+                    return;
+                }
+
+                if(price == '' || price == null || isNaN(price))
+                {
+                    swal.fire(
+                        'Sorry',
+                        'Please fill in valid price first',
+                        'warning'
+                    );
+                    return;
+                }
+
+                if(duration == '' || duration == null || isNaN(price))
+                {
+                    swal.fire(
+                        'Sorry',
+                        'Please fill in duration price first',
+                        'warning'
+                    );
+                    return;
+                }
+
+                if(valid_until == '' || valid_until == null)
+                {
+                    swal.fire(
+                        'Sorry',
+                        'Please fill in valid until field first',
+                        'warning'
+                    );
+                    return;
+                }
+
+                var data = {
+                    hotel: hotel,
+                    description: description,
+                    price: price,
+                    duration: duration,
+                    valid_until: valid_until
+                };
+
+                var end_point = api_base_url + "package/";
+                if(dialog_mode == 'edit')
+                {
+                    data.id = current_id;
+                    end_point = api_base_url+"package/"+current_id+"/";
+                }
+
+
+                $.ajax({
+                  method: dialog_mode == 'new' ? 'POST' : 'PATCH',
+                  url: end_point,
+                  dataType: "json",
+                  data: data,
+                  success: function(data){
+                    var message = dialog_mode == 'new' ? 'Package has been added successfully' : 'Package has been updated successfully';
+                    swal.fire(
+                        'Thank you',
+                        message,
+                        'success'
+                    ).then(function(){
+                        window.location.reload();
+                    });
+                  },
+                  error: function(error) {
+                        swal.fire(
+                            'Oops...',
+                            'Something went wrong, please try again later',
+                            'error'
+                        );
+                        return;
+                  }
+                });
+            });
+            
+        }
+
+        $(document).ready( function () {
+            $.ajax({
+              method: "GET",
+              url: api_base_url+"package",
+              dataType: "json",
+              success: function(data){
+                var s = '';
+                for(var i in data)
+                    s += `
+                        <tr>
+                            <td>
+                                <a class="btn btn-default edit-btn" data-id="${data[i].id}">Edit</a>
+                                <a class="btn btn-danger delete-btn" data-id="${data[i].id}" >Delete</a>
+                            </td>
+                            <td>${data[i].description}</td>
+                            <td>${data[i].hotel}</td>
+                            <td>$${Number(data[i].price).toFixed(2)}</td>
+                            <td>${Number(data[i].duration) > 1 ? (Number(data[i].duration) + ' Days, ' + (Number(data[i].duration) - 1)  + ' Nights') : '1 Day'}</td>
+                            <td>${data[i].valid_until}</td>
+                        </tr>
+                    `;
+
+                if(s == '')
+                    s = `<tr>
+                        <td colspan="6" class="text-center">
+                            No data yet!
+                        </td>
+                    </tr>`;
+
+                $('tbody').html(s);
+                bindEvents();
+
+              },
+              error: function(error) {
+                $('tbody').html(`
+                    <tr>
+                        <td colspan="6">
+                            Couldn't load data, make sure your backend server is up and running!
+                        </td>
+                    </tr>
+                `);
+              }
+            });
+
+            bindEvents();
+        } );
     </script>
 </body>
 </html>
