@@ -1,0 +1,14 @@
+{
+  "name": "airasia-muktar-assessment-frontend",
+  "version": "1.0.0",
+  "description": "Muktar's solution to AirAsia Engineering Manager assessment",
+  "main": "index.js",
+  "scripts": {
+    "test": ""
+  },
+  "author": "Muktar Sayed Saleh",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
